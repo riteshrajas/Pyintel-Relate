@@ -47,23 +47,28 @@ document.addEventListener("DOMContentLoaded", function () {
     let themeToggle = document.querySelector(".theme-toggle");
     if (!themeToggle) {
       themeToggle = document.createElement("button");
-      themeToggle.className = "theme-toggle";
-      const sidebarHeader = document.querySelector(".sidebar-header");
-      if (sidebarHeader) {
-        const newChatBtnRef = sidebarHeader.querySelector(".new-chat-btn");
-        if (newChatBtnRef) {
-          sidebarHeader.insertBefore(themeToggle, newChatBtnRef);
-        } else {
-          sidebarHeader.appendChild(themeToggle);
-        }
+      themeToggle.className = "theme-toggle header-btn"; // Add header-btn class for consistent styling
+      // Find the main chat header's actions container
+      const headerActions = document.querySelector(".chat-header .header-actions");
+      if (headerActions) {
+         // Prepend or append as desired, prepend keeps it left-aligned within actions
+         headerActions.prepend(themeToggle);
       } else {
-        document.body.appendChild(themeToggle);
-        themeToggle.style.position = "fixed";
-        themeToggle.style.top = "15px";
-        themeToggle.style.right = "15px";
+        // Fallback: append to chat header directly (less ideal layout)
+        const chatHeader = document.querySelector(".chat-header");
+        if (chatHeader) {
+            chatHeader.appendChild(themeToggle);
+        } else {
+            // Last resort fallback
+            document.body.appendChild(themeToggle);
+            themeToggle.style.position = 'fixed';
+            themeToggle.style.top = '15px';
+            themeToggle.style.right = '15px';
+        }
       }
       themeToggle.addEventListener("click", toggleTheme);
     }
+    // Always update icon/title on load/creation
     updateThemeToggleButton();
   }
   ensureThemeToggleButton();
@@ -80,6 +85,26 @@ document.addEventListener("DOMContentLoaded", function () {
   [messageInput, intentInput].forEach((textarea) => {
     textarea.addEventListener("input", () => autoResize(textarea));
     autoResize(textarea);
+  });
+
+  // Add Ctrl+Enter listener specifically to intentInput
+  intentInput.addEventListener("keydown", (event) => {
+    // Check if Ctrl key is pressed and the key is Enter
+    // Also check if the generate button is actually visible/active
+    if (event.ctrlKey && event.key === "Enter" && !generateBtn.classList.contains('hidden')) {
+      event.preventDefault(); // Prevent default Enter behavior (newline)
+      generateBtn.click(); // Trigger the generate button click
+    }
+  });
+
+  // Add Ctrl+Enter listener specifically to messageInput
+  messageInput.addEventListener("keydown", (event) => {
+    // Check if Ctrl key is pressed and the key is Enter
+    // Also check if the next button is actually visible/active
+    if (event.ctrlKey && event.key === "Enter" && !nextBtn.classList.contains('hidden')) {
+      event.preventDefault(); // Prevent default Enter behavior (newline)
+      nextBtn.click(); // Trigger the next button click
+    }
   });
 
   // Add confetti effect for successful generation
@@ -306,6 +331,29 @@ document.addEventListener("DOMContentLoaded", function () {
 
       showNotification("Conversation deleted", 2000);
     }
+  }
+
+  function showNotification(message, duration = 3000) {
+    let notification = document.getElementById("keyboard-notification");
+    if (!notification) {
+        notification = document.createElement('div');
+        notification.id = 'keyboard-notification';
+        document.body.appendChild(notification);
+    }
+
+    notification.textContent = message;
+    notification.style.opacity = 1;
+    notification.style.animation = 'none';
+    notification.offsetHeight;
+    notification.style.animation = `fadeInOut ${duration / 1000}s ease forwards`;
+
+    if (notification.hideTimeout) {
+        clearTimeout(notification.hideTimeout);
+    }
+
+    notification.hideTimeout = setTimeout(() => {
+        notification.style.opacity = 0;
+    }, duration);
   }
 
   function updateChatHeader(conversation) {

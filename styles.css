@@ -278,13 +278,20 @@ body {
     font-weight: 500;
     font-size: 0.9rem;
     color: var(--text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
     margin-bottom: 2px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 8px; /* Add a gap between name and actions */
+}
+
+/* Add styles for the span inside chat-name */
+.chat-name span {
+    white-space: nowrap;      /* Prevent wrapping */
+    overflow: hidden;         /* Hide overflow */
+    text-overflow: ellipsis;  /* Add ellipsis (...) */
+    flex-shrink: 1;           /* Allow the span to shrink */
+    min-width: 0;             /* Important for flex shrinking */
 }
 
 .chat-actions {
@@ -292,16 +299,18 @@ body {
     gap: 6px;
     opacity: 0;
     transition: opacity 0.2s ease;
-    pointer-events: none; /* Initially hidden */
+    pointer-events: none;
+    flex-shrink: 0; /* Prevent actions container from shrinking */
 }
 
+/* Restore hover/active rules */
 .chat-item:hover .chat-actions {
     opacity: 1;
-    pointer-events: auto; /* Visible on hover */
+    pointer-events: auto;
 }
 
 .chat-item.active .chat-actions {
-    opacity: 1; /* Always visible when active */
+    opacity: 1;
     pointer-events: auto;
 }
 
@@ -449,6 +458,12 @@ body {
 
 .header-btn:hover {
     background-color: var(--bg-tertiary);
+}
+
+/* Theme Toggle Button */
+.theme-toggle {
+    font-size: 1.1rem;
+    margin-left: 4px; /* Add some spacing if needed */
 }
 
 /* Messages Container */
@@ -836,27 +851,8 @@ body {
 
 /* Theme Toggle Button */
 .theme-toggle {
-    position: absolute;
-    top: 12px; /* Align with sidebar header padding */
-    right: 16px;
-    width: 36px;
-    height: 36px;
-    border-radius: var(--border-radius-sm);
-    background: transparent;
-    border: none;
-    color: var(--text-secondary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
     font-size: 1.1rem;
-    z-index: 6; /* Above sidebar header */
-}
-
-.theme-toggle:hover {
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
+    margin-left: 4px; /* Add some spacing if needed */
 }
 
 /* Helper Classes */
@@ -936,8 +932,6 @@ body {
     .menu-toggle {
         display: flex;
     }
-
-
 
     .messages-container {
         padding: 16px;
