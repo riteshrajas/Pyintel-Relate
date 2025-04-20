@@ -14,10 +14,18 @@ document.addEventListener("DOMContentLoaded", function () {
   const chatList = document.getElementById("chatList");
   const newChatBtn = document.querySelector(".new-chat-btn");
   const chatHeaderTitle = document.querySelector(".chat-header h2");
+  const settingsBtn = document.getElementById("settingsBtn");
+  const settingsModalOverlay = document.getElementById("settingsModalOverlay");
+  const settingsModalCloseBtn = document.getElementById("settingsModalCloseBtn");
+  const settingsSaveBtn = document.getElementById("settingsSaveBtn");
+  const apiEndpointInput = document.getElementById("apiEndpointInput");
 
   let conversations = [];
   let activeConversationId = null;
   let themeMode = localStorage.getItem("pyintelTheme") || "light";
+  let settings = {
+    apiEndpoint: localStorage.getItem("pyintelApiEndpoint") || ""
+  };
 
   // Apply saved theme on load
   document.body.classList.toggle("dark-theme", themeMode === "dark");
@@ -134,6 +142,36 @@ document.addEventListener("DOMContentLoaded", function () {
     if (sender === "them") return '<i class="fas fa-user-friends"></i>';
     return "?";
   }
+
+  // --- Settings Modal Logic ---
+  function openSettingsModal() {
+    // Load current settings into the modal inputs
+    apiEndpointInput.value = settings.apiEndpoint;
+    settingsModalOverlay.classList.remove("hidden");
+  }
+
+  function closeSettingsModal() {
+    settingsModalOverlay.classList.add("hidden");
+  }
+
+  function saveSettings() {
+    const newEndpoint = apiEndpointInput.value.trim();
+    settings.apiEndpoint = newEndpoint;
+    localStorage.setItem("pyintelApiEndpoint", newEndpoint);
+    closeSettingsModal();
+    showNotification("Settings saved", 2000);
+  }
+
+  // Settings Event Listeners
+  settingsBtn.addEventListener("click", openSettingsModal);
+  settingsModalCloseBtn.addEventListener("click", closeSettingsModal);
+  settingsSaveBtn.addEventListener("click", saveSettings);
+  // Optional: Close modal if clicking outside the content area
+  settingsModalOverlay.addEventListener("click", (e) => {
+    if (e.target === settingsModalOverlay) {
+      closeSettingsModal();
+    }
+  });
 
   // --- Initialization ---
   loadConversations();
@@ -542,12 +580,18 @@ document.addEventListener("DOMContentLoaded", function () {
     let reply = "";
     try {
       console.log("Generate button: Calling API..."); // <-- Add log
-      const GAS_WEB_APP_URL =
+      // Use custom endpoint from settings if available, otherwise use default
+      const DEFAULT_GAS_WEB_APP_URL =
         "https://script.google.com/macros/s/AKfycbwzm0I_7e5N9HQDSUfTjB_ijamcyrwQeIznNzM9EyKf9EGy12mZ6MdfcdlIYZcAlPo3/exec";
+      const apiUrl = settings.apiEndpoint || DEFAULT_GAS_WEB_APP_URL;
+
       const encodedTheirMessage = encodeURIComponent(theirMessage);
       const encodedYourIntent = encodeURIComponent(yourIntent);
-      const urlWithParams = `${GAS_WEB_APP_URL}?theirMessage=${encodedTheirMessage}&yourIntent=${encodedYourIntent}`;
+      // Ensure URL has parameters correctly appended
+      const urlWithParams = `${apiUrl}${apiUrl.includes('?') ? '&' : '?'}theirMessage=${encodedTheirMessage}&yourIntent=${encodedYourIntent}`;
+
       const requestOptions = { method: "POST", redirect: "follow" };
+      console.log("Generate button: Using API URL:", urlWithParams); // Log the final URL
       const response = await fetch(urlWithParams, requestOptions);
       console.log("Generate button: API response status:", response.status); // <-- Add log
       if (!response.ok) throw new Error(`Server error: ${response.status}`);
@@ -566,7 +610,13 @@ document.addEventListener("DOMContentLoaded", function () {
       console.error("Error generating response:", error);
       reply =
         "Error generating response. Please check the connection or try again.";
-      showNotification("Error generating response", 3000);
+      // Show specific error if it's a network issue vs. API issue
+      if (error instanceof TypeError) { // Likely network error
+          reply = "Network error. Please check your connection and the API endpoint in settings.";
+      } else if (error.message.includes("Server error")) { // Error from API response status
+          reply = `API Error: ${error.message}. Check the API endpoint and server status.`;
+      }
+      showNotification(reply, 4000); // Show error for longer
     }
 
     generateBtn.disabled = false;

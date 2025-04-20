@@ -40,7 +40,10 @@
                 </button>
                 <h2>Pyintel Relate</h2>
                 <div class="header-actions">
-                    <!-- Placeholder for potential future actions -->
+                    <!-- Theme toggle button will be prepended here by JS -->
+                    <button class="settings-btn header-btn" id="settingsBtn" title="Settings">
+                        <i class="fas fa-cog"></i>
+                    </button>
                 </div>
             </div>
             
@@ -69,6 +72,30 @@
                         </button>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay hidden" id="settingsModalOverlay">
+        <div class="modal-content">
+            <h2>Settings</h2>
+            <button class="modal-close-btn" id="settingsModalCloseBtn" title="Close Settings">&times;</button>
+
+            <div class="settings-section">
+                <h3>API Configuration</h3>
+                <div class="setting-item">
+                    <label for="apiEndpointInput">Custom API Endpoint (Optional):</label>
+                    <input type="url" id="apiEndpointInput" placeholder="Enter custom API URL...">
+                    <small>Leave blank to use the default endpoint.</small>
+                </div>
+                <!-- Add more API-related settings here if needed -->
+            </div>
+
+            <!-- Add more settings sections here -->
+
+            <div class="modal-actions">
+                <button id="settingsSaveBtn" class="modal-save-btn">Save Settings</button>
             </div>
         </div>
     </div>
