@@ -46,6 +46,7 @@
     --shadow-color: var(--shadow-light);
 
     --sidebar-width: 300px;
+    --sidebar-width-collapsed: 0px; /* For transition purposes */
     --header-height: 60px;
     --composer-padding: 16px;
     --border-radius-sm: 8px;
@@ -96,25 +97,36 @@ body {
 .app-container {
     display: flex;
     height: 100vh;
-    width: 100vw;
-    position: relative;
-    background: var(--bg-secondary);
-    overflow: hidden;
+    overflow: hidden; /* Prevent app container itself from scrolling */
+    background-color: var(--bg-primary);
 }
 
 /* === SIDEBAR STYLES === */
 .sidebar {
     width: var(--sidebar-width);
-    background: var(--bg-primary);
+    background-color: var(--bg-secondary);
     border-right: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
-    height: 100vh;
-    flex-shrink: 0;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    box-shadow: 1px 0 0 var(--border-color);
-    position: relative;
-    z-index: 10;
+    transition: width 0.3s ease, transform 0.3s ease, min-width 0.3s ease; /* Added min-width */
+    overflow-x: hidden; /* Prevent content from showing when collapsed */
+    flex-shrink: 0; /* Prevent sidebar from shrinking beyond its width */
+}
+
+.sidebar.collapsed {
+    width: var(--sidebar-width-collapsed);
+    min-width: var(--sidebar-width-collapsed); /* Ensure it can collapse to 0 */
+    border-right: none;
+    /* transform: translateX(-100%); remove this if using width for collapse */
+    /* Hide content when collapsed */
+}
+
+.sidebar.collapsed .sidebar-header h2,
+.sidebar.collapsed .new-chat-btn,
+.sidebar.collapsed .sidebar-content {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.1s ease, visibility 0s linear 0.1s;
 }
 
 .sidebar-header {
@@ -218,6 +230,8 @@ body {
     display: flex;
     flex-direction: column;
     gap: 4px;
+    flex-grow: 1; /* Allow chat list to take available space */
+    overflow-y: auto; /* Enable scrolling for chat list only */
 }
 
 .chat-item {
@@ -387,13 +401,11 @@ body {
 
 /* === CHAT CONTAINER === */
 .chat-container {
-    flex: 1;
+    flex-grow: 1;
     display: flex;
     flex-direction: column;
-    height: 100vh;
-    overflow: hidden;
-    position: relative;
-    background: var(--bg-secondary);
+    background-color: var(--bg-primary);
+    overflow: hidden; /* Prevent chat container itself from scrolling */
 }
 
 /* Chat Header */
@@ -409,23 +421,22 @@ body {
 }
 
 .menu-toggle {
-    width: 36px;
-    height: 36px;
-    border-radius: var(--border-radius-sm);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: transparent;
-    color: var(--text-secondary);
+    background: none;
     border: none;
+    color: var(--text-secondary);
+    font-size: 1.4rem;
     cursor: pointer;
-    margin-right: 12px;
-    display: none; /* Hidden on desktop */
-    transition: background-color 0.2s ease;
+    padding: 8px;
+    display: none; /* Hidden by default, JS will show it */
+    margin-right: 10px;
 }
 
 .menu-toggle:hover {
     background-color: var(--bg-tertiary);
+}
+
+.menu-toggle:active { /* Added for better touch feedback */
+    background-color: var(--border-color); /* Or a slightly darker shade of tertiary */
 }
 
 .chat-header h2 {
@@ -473,13 +484,12 @@ body {
 
 /* Messages Container */
 .messages-container {
-    flex: 1;
-    overflow-y: auto;
+    flex-grow: 1;
     padding: 20px;
+    overflow-y: auto;
+    background-color: var(--bg-primary); /* Ensure it has a background */
     display: flex;
     flex-direction: column;
-    gap: 4px; /* Reduced gap for tighter message packing */
-    scroll-behavior: smooth;
 }
 
 .date-divider {
@@ -578,7 +588,7 @@ body {
     padding: 10px 14px;
     border-radius: var(--border-radius-lg);
     position: relative;
-    line-height: 1.5;
+    line-height: 0.75;
     font-size: 0.95rem;
     box-shadow: 0 1px 2px var(--shadow-color);
     word-wrap: break-word;
@@ -1046,39 +1056,69 @@ body {
 /* === RESPONSIVE DESIGN === */
 @media (max-width: 768px) {
     .sidebar {
-        position: fixed;
-        top: 0;
+        position: fixed; /* Changed from absolute to fixed */
         left: 0;
-        bottom: 0;
-        width: 85%;
-        max-width: 300px; /* Match original width */
-        transform: translateX(-100%);
-        z-index: 1000;
-        box-shadow: 5px 0 25px rgba(0,0,0,0.2);
-        border-right: none;
+        top: 0;
+        height: 100%;
+        z-index: 100; /* Ensure sidebar is above other content */
+        transform: translateX(0); /* Start visible or controlled by collapsed */
+        box-shadow: 2px 0 10px var(--shadow-color);
     }
 
-    .sidebar.active {
-        transform: translateX(0);
+    .sidebar.collapsed {
+        transform: translateX(-100%); /* Slide out */
+        width: var(--sidebar-width); 
+    }
+
+    .chat-header { /* Added for mobile to ensure it's above the sidebar */
+        position: relative; /* Necessary for z-index to take effect in this context */
+        z-index: 101;     /* Higher than the sidebar's z-index (100) */
+    }
+
+    .chat-container {
+        width: 100%; /* Take full width when sidebar is fixed/overlay */
+        transition: margin-left 0.3s ease;
+        margin-left: 0; /* Default, no margin */
+    }
+
+    /* If sidebar is NOT collapsed (i.e., open) on mobile, push content */
+    body.sidebar-open-mobile .chat-container { 
+        margin-left: var(--sidebar-width);
     }
 
     .menu-toggle {
-        display: flex;
+        display: block; /* Ensured by JS, but good to have as base for mobile */
     }
 
-    .messages-container {
-        padding: 16px;
+    /* Optional: Add a backdrop when sidebar is open on mobile */
+    body.sidebar-open-mobile::after {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        z-index: 999; /* Below sidebar */
     }
 
-    .message {
-        max-width: 85%;
+    .composer {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .composer-input-container {
+        margin-right: 0;
+        margin-bottom: 8px; /* Space between input and buttons */
+    }
+    .composer-actions {
+        align-self: flex-end; /* Align buttons to the right */
     }
 
-    .composer-container {
-        padding: 12px;
+    .message-content {
+        max-width: 85%; /* Slightly more width for messages on smaller screens */
     }
-
 }
+
 @media (max-width: 480px) {
     html {
         font-size: 15px; /* Slightly smaller base font for small screens */
@@ -1088,49 +1128,47 @@ body {
         max-width: 280px;
     }
 
-    .chat-header {
-        padding: 0 12px;
+    .sidebar-header h2 {
+        font-size: 1.1rem;
     }
 
-    .messages-container {
-        padding: 12px;
-    }
-
-    .message {
-        max-width: 90%;
-    }
-
-    .message-content {
-        padding: 8px 12px;
-        font-size: 0.9rem;
-    }
-
-    .message-avatar {
-        width: 28px;
-        height: 28px;
-        font-size: 0.8rem;
-    }
-    .message-avatar i {
-        font-size: 0.9rem;
-    }
-
-    .composer-container {
-        padding: 8px;
-    }
-
-    .composer {
+    .new-chat-btn {
+        font-size: 1rem;
         padding: 6px;
     }
 
+    .chat-header h2 {
+        font-size: 1.1rem;
+    }
+
+    .header-btn {
+        font-size: 1rem;
+        padding: 6px;
+    }
+
+    .message-content p {
+        font-size: 0.9rem;
+    }
+
     .composer-input {
-        padding: 8px 10px;
+        font-size: 0.9rem;
+        padding: 10px 12px;
     }
 
     .send-btn {
-        width: 34px;
-        height: 34px;
-    }
-    .send-btn i {
+        padding: 10px 12px;
         font-size: 0.9rem;
+    }
+
+    .settings-section h3 {
+        font-size: 1rem;
+    }
+
+    .setting-item label {
+        font-size: 0.85rem;
+    }
+
+    .modal-content h2 {
+        font-size: 1.2rem;
     }
 }

@@ -173,6 +173,53 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
+  // --- Responsive Sidebar Logic ---
+  function manageSidebarResponsive() {
+    const isSmallScreen = window.innerWidth <= 768;
+
+    if (isSmallScreen) {
+      menuToggle.style.display = 'block'; // Show toggle button
+      if (!sidebar.classList.contains('collapsed')) {
+        document.body.classList.add('sidebar-open-mobile');
+      } else {
+        document.body.classList.remove('sidebar-open-mobile');
+      }
+    } else { // Large screen
+      menuToggle.style.display = 'none'; // Hide toggle button
+      sidebar.classList.remove('collapsed'); // Ensure sidebar is open
+      document.body.classList.remove('sidebar-open-mobile'); // No backdrop needed
+    }
+  }
+
+  // Initial setup on load for sidebar
+  if (window.innerWidth <= 768) {
+    sidebar.classList.add('collapsed'); 
+  } else {
+    sidebar.classList.remove('collapsed'); // Ensure sidebar is open on large screens
+  }
+  manageSidebarResponsive(); 
+
+  menuToggle.addEventListener("click", () => {
+    sidebar.classList.toggle("collapsed");
+    manageSidebarResponsive(); 
+  });
+
+  window.addEventListener("resize", manageSidebarResponsive);
+
+  // Corrected: Close sidebar when clicking outside on mobile
+  document.addEventListener('click', function(event) {
+    const isSmallScreen = window.innerWidth <= 768;
+    // Check if sidebar is open (not collapsed), click is outside sidebar and not on toggle button
+    if (isSmallScreen && 
+        !sidebar.classList.contains('collapsed') && 
+        !sidebar.contains(event.target) && 
+        !menuToggle.contains(event.target) &&
+        event.target !== sidebar) { // Ensure click is not on sidebar itself
+      sidebar.classList.add('collapsed');
+      manageSidebarResponsive(); // Update UI (e.g., backdrop)
+    }
+  });
+
   // --- Initialization ---
   loadConversations();
   renderChatList();
@@ -425,10 +472,7 @@ document.addEventListener("DOMContentLoaded", function () {
                           <div class="message-time">${getCurrentTime()}</div>
                       </div>
                   </div>
-                  <div class="hint-message">
-                      <i class="fas fa-info-circle"></i>
-                      <p>Enter the message you received, then describe your desired response.</p>
-                  </div>
+              
                 </div>`;
     } else {
       let lastDate = null;
@@ -466,31 +510,37 @@ document.addEventListener("DOMContentLoaded", function () {
 
     messageInput.focus();
 
-    if (window.innerWidth <= 768 && sidebar.classList.contains("active")) {
-      sidebar.classList.remove("active");
+    // Close sidebar on mobile when switching chat
+    if (window.innerWidth <= 768 && !sidebar.classList.contains("collapsed")) {
+      sidebar.classList.add("collapsed");
+      manageSidebarResponsive();
     }
 
     console.log(`Switched to chat: ${conversationId}`);
   }
 
   function createNewChat() {
-    const newId = `chat-${Date.now()}`;
-    const newConvo = {
-      id: newId,
-      name: `New Conversation`,
+    const newConversationId = `chat_${Date.now()}`;
+    const newConversation = {
+      id: newConversationId,
+      name: "New Chat",
       messages: [],
-      createdAt: Date.now(),
+      timestamp: Date.now(),
     };
-    conversations.unshift(newConvo);
-    activeConversationId = newId;
+    conversations.unshift(newConversation); // Add to the beginning of the array
+    activeConversationId = newConversationId;
     saveConversations();
-
-    renderChatList();
-    renderMessages(newId);
-    resetInputs();
+    renderChatList(); // Re-render the list to show the new chat
+    switchChat(newConversationId); // Switch to the new chat
     messageInput.focus();
 
-    console.log(`Created new chat: ${newId}`);
+    // Ensure sidebar is visible and UI is consistent on smaller screens
+    if (window.innerWidth <= 768) {
+      if (sidebar.classList.contains("collapsed")) {
+        sidebar.classList.remove("collapsed"); 
+      }
+      manageSidebarResponsive(); 
+    }
   }
 
   function formatTimestamp(timestamp) {
@@ -632,20 +682,17 @@ document.addEventListener("DOMContentLoaded", function () {
     console.log("Generate button: Process complete."); // <-- Add log
   });
 
-  menuToggle.addEventListener("click", () => {
-    sidebar.classList.toggle("active");
-  });
-
-  document.addEventListener("click", (e) => {
-    if (
-      window.innerWidth <= 768 &&
-      sidebar.classList.contains("active") &&
-      !e.target.closest(".sidebar") &&
-      !e.target.closest(".menu-toggle")
-    ) {
-      sidebar.classList.remove("active");
-    }
-  });
+  // REMOVE the old/conflicting click listener that was here using .active
+  // document.addEventListener("click", (e) => {
+  //   if (
+  //     window.innerWidth <= 768 &&
+  //     sidebar.classList.contains("active") &&
+  //     !e.target.closest(".sidebar") &&
+  //     !e.target.closest(".menu-toggle")
+  //   ) {
+  //     sidebar.classList.remove("active");
+  //   }
+  // });
 
   function addMessageToDOM(sender, content, isIntentOnly = false, timestamp) {
     const messageWrapper = document.createElement("div");
